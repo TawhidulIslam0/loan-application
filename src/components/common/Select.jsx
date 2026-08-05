@@ -1,15 +1,18 @@
 import React, { forwardRef } from 'react';
+import PropTypes from 'prop-types';
 
-export const Select = forwardRef(({ 
-  label, 
-  options = [], 
-  error, 
-  helperText, 
-  id, 
-  className = '', 
-  ...props 
+
+export const Select = forwardRef(({
+  label,
+  options = [],
+  error,
+  helperText,
+  id,
+  className = '',
+  ...props
 }, ref) => {
   const selectId = id || props.name;
+
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -22,12 +25,11 @@ export const Select = forwardRef(({
         ref={ref}
         id={selectId}
         aria-invalid={error ? 'true' : 'false'}
-        className={`px-3 py-2 border rounded-md text-sm bg-white outline-none transition-colors 
-          ${error ? 'border-red-500' : 'border-gray-300'} 
+        className={`px-3 py-2 border rounded-md text-sm bg-white outline-none transition-colors
+          ${error ? 'border-red-500' : 'border-gray-300'}
           ${className}`}
         {...props}
       >
-        <option value="" disabled>Select an option</option>
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
@@ -40,4 +42,20 @@ export const Select = forwardRef(({
   );
 });
 
+
 Select.displayName = 'Select';
+
+
+Select.propTypes = {
+  label: PropTypes.string,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    })
+  ).isRequired,
+  error: PropTypes.string,
+  helperText: PropTypes.string,
+  id: PropTypes.string,
+  className: PropTypes.string,
+};
