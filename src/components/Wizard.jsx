@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import ProgressBar from './ProgressBar';
 import StepNavigation from './StepNavigation';
-import Step1 from '../steps/Step1';
-import Step2 from '../steps/Step2';
+import Step1LoanType from '../steps/Step1LoanType';
+import { Step2PersonalInfo } from '../steps/Step2PersonalInfo';
 import Step3 from '../steps/Step3';
 
+
 const stepsList = [
-  { id: 1, name: 'Loan Details', component: Step1 },
-  { id: 2, name: 'Personal Info', component: Step2 },
+  { id: 1, name: 'Loan Details', component: Step1LoanType },
+  { id: 2, name: 'Personal Info', component: Step2PersonalInfo },
   { id: 3, name: 'Identity KYC', component: Step3 },
   { id: 4, name: 'Address', component: () => <div className="p-6">Step 4 Placeholder</div> },
   { id: 5, name: 'Employment', component: () => <div className="p-6">Step 5 Placeholder</div> },
@@ -16,17 +17,33 @@ const stepsList = [
   { id: 8, name: 'Review & Submit', component: () => <div className="p-6">Step 8 Placeholder</div> },
 ];
 
+
 export default function Wizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
+  const [maxTenure, setMaxTenure] = useState(30);
+ 
+  // Create a ref to target the form submit button directly
+  const submitButtonRef = useRef(null);
+
 
   const totalSteps = stepsList.length;
 
+
   const handleNext = () => {
-    if (currentStep < totalSteps) {
-      setCurrentStep((prev) => prev + 1);
+    // Instead of querying native form requestSubmit,
+    // we click the hidden/internal form submit button which forces React Hook Form to validate & fire onSubmit
+    const formElement = document.querySelector('form');
+    if (formElement) {
+      const submitBtn = formElement.querySelector('button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.click();
+      } else {
+        formElement.requestSubmit();
+      }
     }
   };
+
 
   const handlePrev = () => {
     if (currentStep > 1) {
@@ -34,12 +51,15 @@ export default function Wizard() {
     }
   };
 
+
   const handleSaveDraft = () => {
     localStorage.setItem('lendswift_draft', JSON.stringify(formData));
     alert('Draft saved successfully!');
   };
 
+
   const CurrentComponent = stepsList[currentStep - 1].component;
+
 
   return (
     <div className="max-w-3xl mx-auto my-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
@@ -48,18 +68,34 @@ export default function Wizard() {
         <p className="text-sm font-medium text-slate-700 mt-1">Complete the steps below to apply for your instant loan.</p>
       </div>
 
+
       <ProgressBar currentStep={currentStep} totalSteps={totalSteps} stepsList={stepsList} />
 
+
       <div className="p-6 min-h-[300px]">
-        <CurrentComponent formData={formData} setFormData={setFormData} />
+        <CurrentComponent
+          formData={formData}
+          updateFormData={(data) => {
+            setFormData((prev) => ({ ...prev, ...data }));
+            if (currentStep < totalSteps) {
+              setCurrentStep((prev) => prev + 1);
+            }
+          }}
+          setFormData={setFormData}
+          maxTenure={maxTenure}
+          setMaxTenure={setMaxTenure}
+          nextStep={handleNext}
+          prevStep={handlePrev}
+        />
       </div>
 
-      <StepNavigation 
-        currentStep={currentStep} 
-        totalSteps={totalSteps} 
-        onNext={handleNext} 
-        onPrev={handlePrev} 
-        onSaveDraft={handleSaveDraft} 
+
+      <StepNavigation
+        currentStep={currentStep}
+        totalSteps={totalSteps}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        onSaveDraft={handleSaveDraft}
       />
     </div>
   );
