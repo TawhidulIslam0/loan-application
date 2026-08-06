@@ -1,15 +1,15 @@
-import { useState, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
+import { useForm, FormProvider } from 'react-hook-form';
 import ProgressBar from './ProgressBar';
 import StepNavigation from './StepNavigation';
 import Step1LoanType from '../steps/Step1LoanType';
 import { Step2PersonalInfo } from '../steps/Step2PersonalInfo';
-import Step3 from '../steps/Step3';
-
+import Step3KYC from '../steps/Step3KYC';
 
 const stepsList = [
   { id: 1, name: 'Loan Details', component: Step1LoanType },
   { id: 2, name: 'Personal Info', component: Step2PersonalInfo },
-  { id: 3, name: 'Identity KYC', component: Step3 },
+  { id: 3, name: 'Identity KYC', component: Step3KYC },
   { id: 4, name: 'Address', component: () => <div className="p-6">Step 4 Placeholder</div> },
   { id: 5, name: 'Employment', component: () => <div className="p-6">Step 5 Placeholder</div> },
   { id: 6, name: 'Co-Applicant', component: () => <div className="p-6">Step 6 Placeholder</div> },
@@ -17,33 +17,39 @@ const stepsList = [
   { id: 8, name: 'Review & Submit', component: () => <div className="p-6">Step 8 Placeholder</div> },
 ];
 
-
 export default function Wizard() {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [maxTenure, setMaxTenure] = useState(30);
- 
-  // Create a ref to target the form submit button directly
-  const submitButtonRef = useRef(null);
 
+  const methods = useForm({
+    defaultValues: {
+      loanType: 'Personal',
+      panNumber: '',
+      aadhaarNumber: '',
+      aadhaarConsent: false,
+      ...formData,
+    },
+    mode: 'onBlur',
+  });
 
   const totalSteps = stepsList.length;
 
-
   const handleNext = () => {
-    // Instead of querying native form requestSubmit,
-    // we click the hidden/internal form submit button which forces React Hook Form to validate & fire onSubmit
-    const formElement = document.querySelector('form');
-    if (formElement) {
-      const submitBtn = formElement.querySelector('button[type="submit"]');
+    const activeForm = document.querySelector('form');
+    if (activeForm) {
+      const submitBtn = activeForm.querySelector('button[type="submit"]');
       if (submitBtn) {
         submitBtn.click();
       } else {
-        formElement.requestSubmit();
+        activeForm.requestSubmit();
+      }
+    } else {
+      if (currentStep < totalSteps) {
+        setCurrentStep((prev) => prev + 1);
       }
     }
   };
-
 
   const handlePrev = () => {
     if (currentStep > 1) {
@@ -51,52 +57,57 @@ export default function Wizard() {
     }
   };
 
-
   const handleSaveDraft = () => {
-    localStorage.setItem('lendswift_draft', JSON.stringify(formData));
+    localStorage.setItem('lendswift_draft', JSON.stringify({ ...formData, ...methods.getValues() }));
     alert('Draft saved successfully!');
   };
 
+  // Wrapped in useCallback to stabilize the reference passed to child components
+  const handleUpdateFormData = useCallback((data) => {
+    setFormData((prev) => ({ ...prev, ...data }));
+    if (currentStep < totalSteps) {
+      setCurrentStep((prev) => prev + 1);
+    }
+  }, [currentStep, totalSteps]);
+
+  // Wrapped in useCallback to prevent infinite render loops with child useEffect hooks
+  const handleVerificationChange = useCallback((verificationData) => {
+    setFormData((prev) => ({ ...prev, ...verificationData }));
+  }, []);
 
   const CurrentComponent = stepsList[currentStep - 1].component;
 
-
   return (
-    <div className="max-w-3xl mx-auto my-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-      <div className="bg-white border-b border-gray-100 p-6">
-        <h1 className="text-2xl font-bold text-slate-900">LendSwift Loan Application</h1>
-        <p className="text-sm font-medium text-slate-700 mt-1">Complete the steps below to apply for your instant loan.</p>
-      </div>
+    <FormProvider {...methods}>
+      <div className="max-w-3xl mx-auto my-10 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white border-b border-gray-100 p-6">
+          <h1 className="text-2xl font-bold text-slate-900">LendSwift Loan Application</h1>
+          <p className="text-sm font-medium text-slate-700 mt-1">Complete the steps below to apply for your instant loan.</p>
+        </div>
 
+        <ProgressBar currentStep={currentStep} totalSteps={totalSteps} stepsList={stepsList} />
 
-      <ProgressBar currentStep={currentStep} totalSteps={totalSteps} stepsList={stepsList} />
+        <div className="p-6 min-h-[300px]">
+          <CurrentComponent
+            formData={formData}
+            updateFormData={handleUpdateFormData}
+            setFormData={setFormData}
+            maxTenure={maxTenure}
+            setMaxTenure={setMaxTenure}
+            nextStep={handleNext}
+            prevStep={handlePrev}
+            onVerificationChange={handleVerificationChange}
+          />
+        </div>
 
-
-      <div className="p-6 min-h-[300px]">
-        <CurrentComponent
-          formData={formData}
-          updateFormData={(data) => {
-            setFormData((prev) => ({ ...prev, ...data }));
-            if (currentStep < totalSteps) {
-              setCurrentStep((prev) => prev + 1);
-            }
-          }}
-          setFormData={setFormData}
-          maxTenure={maxTenure}
-          setMaxTenure={setMaxTenure}
-          nextStep={handleNext}
-          prevStep={handlePrev}
+        <StepNavigation
+          currentStep={currentStep}
+          totalSteps={totalSteps}
+          onNext={handleNext}
+          onPrev={handlePrev}
+          onSaveDraft={handleSaveDraft}
         />
       </div>
-
-
-      <StepNavigation
-        currentStep={currentStep}
-        totalSteps={totalSteps}
-        onNext={handleNext}
-        onPrev={handlePrev}
-        onSaveDraft={handleSaveDraft}
-      />
-    </div>
+    </FormProvider>
   );
 }
