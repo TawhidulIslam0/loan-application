@@ -5,9 +5,10 @@ export const MaskedInput = forwardRef(({
   error, 
   helperText, 
   id, 
-  type = 'pan', // 'pan' or 'aadhaar'
+  type = 'pan', 
   value = '', 
   onChange, 
+  onBlur,
   className = '', 
   ...props 
 }, ref) => {
@@ -22,9 +23,28 @@ export const MaskedInput = forwardRef(({
     const lastFour = strVal.slice(-4);
     const maskedPart = '•'.repeat(strVal.length - 4);
     
-    // Format Aadhaar with spaces every 4 characters if desired, or keep raw
     return `${maskedPart}${lastFour}`;
   };
+
+  const handleFocus = (e) => {
+    setIsFocused(true);
+    if (props.onFocus) props.onFocus(e);
+  };
+
+  const handleBlur = (e) => {
+    setIsFocused(false);
+    if (onBlur) onBlur(e);
+  };
+
+  const handleChange = (e) => {
+    const rawVal = e.target.value.replace(/[•]/g, '');
+    if (onChange) {
+      e.target.value = rawVal;
+      onChange(e);
+    }
+  };
+
+  const displayValue = isFocused ? value : getMaskedValue(value);
 
   return (
     <div className="flex flex-col gap-1.5 w-full">
@@ -37,10 +57,10 @@ export const MaskedInput = forwardRef(({
         ref={ref}
         id={inputId}
         type="text"
-        value={isFocused ? value : getMaskedValue(value)}
-        onFocus={() => setIsFocused(true)}
-        onBlur={() => setIsFocused(false)}
-        onChange={onChange}
+        value={displayValue || ''}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        onChange={handleChange}
         maxLength={type === 'pan' ? 10 : 12}
         aria-invalid={error ? 'true' : 'false'}
         className={`px-3 py-2 border rounded-md text-sm outline-none transition-colors uppercase 
@@ -55,3 +75,5 @@ export const MaskedInput = forwardRef(({
 });
 
 MaskedInput.displayName = 'MaskedInput';
+
+export default MaskedInput;
