@@ -6,6 +6,7 @@ import Step1LoanType from '../steps/Step1LoanType';
 import { Step2PersonalInfo } from '../steps/Step2PersonalInfo';
 import Step3KYC from '../steps/Step3KYC';
 import Step4Address from '../steps/Step4Address';
+import Step7Documents from '../steps/Step7Documents';
 
 const stepsList = [
   { id: 1, name: 'Loan Details', component: Step1LoanType },
@@ -14,7 +15,7 @@ const stepsList = [
   { id: 4, name: 'Address', component: Step4Address },
   { id: 5, name: 'Employment', component: () => <div className="p-6">Step 5 Placeholder</div> },
   { id: 6, name: 'Co-Applicant', component: () => <div className="p-6">Step 6 Placeholder</div> },
-  { id: 7, name: 'Documents', component: () => <div className="p-6">Step 7 Placeholder</div> },
+  { id: 7, name: 'Documents', component: Step7Documents },
   { id: 8, name: 'Review & Submit', component: () => <div className="p-6">Step 8 Placeholder</div> },
 ];
 
