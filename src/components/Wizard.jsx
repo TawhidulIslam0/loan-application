@@ -5,12 +5,13 @@ import StepNavigation from './StepNavigation';
 import Step1LoanType from '../steps/Step1LoanType';
 import { Step2PersonalInfo } from '../steps/Step2PersonalInfo';
 import Step3KYC from '../steps/Step3KYC';
+import Step4Address from '../steps/Step4Address';
 
 const stepsList = [
   { id: 1, name: 'Loan Details', component: Step1LoanType },
   { id: 2, name: 'Personal Info', component: Step2PersonalInfo },
   { id: 3, name: 'Identity KYC', component: Step3KYC },
-  { id: 4, name: 'Address', component: () => <div className="p-6">Step 4 Placeholder</div> },
+  { id: 4, name: 'Address', component: Step4Address },
   { id: 5, name: 'Employment', component: () => <div className="p-6">Step 5 Placeholder</div> },
   { id: 6, name: 'Co-Applicant', component: () => <div className="p-6">Step 6 Placeholder</div> },
   { id: 7, name: 'Documents', component: () => <div className="p-6">Step 7 Placeholder</div> },
@@ -28,6 +29,15 @@ export default function Wizard() {
       panNumber: '',
       aadhaarNumber: '',
       aadhaarConsent: false,
+      currentPin: '',
+      currentCity: '',
+      currentState: '',
+      currentAddressLine1: '',
+      residenceType: '',
+      rentAmount: '',
+      yearsAnAddress: '',
+      previousAddress: '',
+      sameAsPermanent: false,
       ...formData,
     },
     mode: 'onBlur',
@@ -35,7 +45,13 @@ export default function Wizard() {
 
   const totalSteps = stepsList.length;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    // Validate current form fields using React Hook Form trigger
+    const isValid = await methods.trigger();
+    if (!isValid) {
+      return; // Stop progression if validation fails
+    }
+
     const activeForm = document.querySelector('form');
     if (activeForm) {
       const submitBtn = activeForm.querySelector('button[type="submit"]');
@@ -63,12 +79,15 @@ export default function Wizard() {
   };
 
   // Wrapped in useCallback to stabilize the reference passed to child components
-  const handleUpdateFormData = useCallback((data) => {
+  const handleUpdateFormData = useCallback(async (data) => {
+    const isValid = await methods.trigger();
+    if (!isValid) return;
+
     setFormData((prev) => ({ ...prev, ...data }));
     if (currentStep < totalSteps) {
       setCurrentStep((prev) => prev + 1);
     }
-  }, [currentStep, totalSteps]);
+  }, [currentStep, totalSteps, methods]);
 
   // Wrapped in useCallback to prevent infinite render loops with child useEffect hooks
   const handleVerificationChange = useCallback((verificationData) => {
