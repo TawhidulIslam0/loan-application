@@ -6,7 +6,7 @@ import { Select } from "../components/common/Select";
 import { ErrorMessage } from "../components/common/ErrorMessage";
 import PropTypes from 'prop-types';
 
-export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep, setMaxTenure }) {
+export function Step2PersonalInfo({ formData, updateFormData, setMaxTenure }) {
   const {
     register,
     handleSubmit,
@@ -19,15 +19,15 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
       dob: '',
       gender: '',
       maritalStatus: '',
+      fatherName: '',
+      motherName: '',
       email: '',
       mobileNumber: '',
       alternateMobile: '',
     },
   });
 
-
   const dobValue = watch('dob');
-
 
   const onSubmit = (data) => {
     if (data.dob) {
@@ -40,30 +40,27 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
     if (updateFormData) updateFormData(data);
   };
 
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-xl mx-auto">
       {/* Hidden submit button so Wizard's query selector targets this form safely */}
       <button type="submit" className="hidden" aria-hidden="true" />
-
 
       <div>
         <h2 className="text-xl font-bold text-gray-800">Step 2: Personal Information</h2>
         <p className="text-sm text-gray-600 mb-4">Please enter your personal details.</p>
       </div>
 
-
       {/* Full Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Full Name (as per PAN)</label>
         <input
           type="text"
           {...register('fullName')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter full name"
         />
         {errors.fullName && <ErrorMessage message={errors.fullName.message} />}
       </div>
-
 
       {/* Date of Birth */}
       <div>
@@ -79,7 +76,6 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
         )}
       </div>
 
-
       {/* Gender */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
@@ -93,7 +89,6 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
         </div>
         {errors.gender && <ErrorMessage message={errors.gender.message} />}
       </div>
-
 
       {/* Marital Status */}
       <div>
@@ -111,6 +106,29 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
         />
       </div>
 
+      {/* Father's Name */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Father's Name</label>
+        <input
+          type="text"
+          {...register('fatherName')}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter father's name"
+        />
+        {errors.fatherName && <ErrorMessage message={errors.fatherName.message} />}
+      </div>
+
+      {/* Mother's Name */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Mother's Name</label>
+        <input
+          type="text"
+          {...register('motherName')}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter mother's name"
+        />
+        {errors.motherName && <ErrorMessage message={errors.motherName.message} />}
+      </div>
 
       {/* Email */}
       <div>
@@ -119,10 +137,10 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
           type="email"
           {...register('email')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="name@example.com"
         />
         {errors.email && <ErrorMessage message={errors.email.message} />}
       </div>
-
 
       {/* Mobile Number */}
       <div>
@@ -132,10 +150,10 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
           maxLength={10}
           {...register('mobileNumber')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="10-digit mobile number"
         />
         {errors.mobileNumber && <ErrorMessage message={errors.mobileNumber.message} />}
       </div>
-
 
       {/* Alternate Mobile Number */}
       <div>
@@ -145,13 +163,13 @@ export function Step2PersonalInfo({ formData, updateFormData, nextStep, prevStep
           maxLength={10}
           {...register('alternateMobile')}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Alternate 10-digit number"
         />
         {errors.alternateMobile && <ErrorMessage message={errors.alternateMobile.message} />}
       </div>
     </form>
   );
 }
-
 
 Step2PersonalInfo.propTypes = {
   formData: PropTypes.object.isRequired,
