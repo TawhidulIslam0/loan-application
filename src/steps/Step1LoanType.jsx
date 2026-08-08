@@ -6,10 +6,8 @@ import { Select } from '../components/common/Select';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import PropTypes from 'prop-types';
 
-
-export default function Step1LoanType({ formData, updateFormData, maxTenure, nextStep }) {
+export default function Step1LoanType({ formData, updateFormData, maxTenure }) {
   const schema = createStep1Schema(maxTenure);
-
 
   const {
     register,
@@ -20,18 +18,16 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure, nex
   } = useForm({
     resolver: zodResolver(schema),
     defaultValues: formData?.loanType ? formData : {
-      loanType: 'Home',
+      loanType: 'Personal',
       loanAmount: '',
       tenureMonths: '',
-      purpose: loanPurposes['Home'][0],
+      purpose: loanPurposes['Personal'][0],
     },
     mode: 'onChange',
   });
 
-
   const selectedLoanType = watch('loanType');
   const availablePurposes = loanPurposes[selectedLoanType] || [];
-
 
   useEffect(() => {
     if (watch('purpose') && !availablePurposes.includes(watch('purpose'))) {
@@ -39,34 +35,29 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure, nex
     }
   }, [selectedLoanType, availablePurposes, setValue, watch]);
 
-
   const onSubmit = (data) => {
     if (updateFormData) {
       updateFormData(data);
     }
   };
 
-
   const purposeOptions = availablePurposes.map((p) => ({ label: p, value: p }));
-
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-xl mx-auto">
       {/* Hidden submit button so Wizard's query selector targets this form's submission safely */}
       <button type="submit" className="hidden" aria-hidden="true" />
 
-
       <div>
         <h2 className="text-xl font-bold text-gray-800">Step 1: Select Loan Type</h2>
         <p className="text-sm text-gray-600 mb-4">Choose your loan type and amount preference.</p>
       </div>
 
-
       {/* Loan Type Radio Group */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Loan Type</label>
-        <div className="grid grid-cols-2 gap-4">
-          {['Home', 'Car', 'Personal', 'Education'].map((type) => (
+        <div className="grid grid-cols-3 gap-4">
+          {['Personal', 'Home', 'Business'].map((type) => (
             <label
               key={type}
               className={`flex items-center justify-center p-4 border rounded-lg cursor-pointer transition-all ${
@@ -86,7 +77,6 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure, nex
         {errors.loanType && <ErrorMessage message={errors.loanType.message} />}
       </div>
 
-
       {/* Loan Amount Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount (₹)</label>
@@ -101,7 +91,6 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure, nex
         </div>
         {errors.loanAmount && <ErrorMessage message={errors.loanAmount.message} />}
       </div>
-
 
       {/* Tenure Months */}
       <div>
@@ -118,7 +107,6 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure, nex
         )}
       </div>
 
-
       {/* Purpose Dropdown */}
       <div>
         <Select
@@ -132,7 +120,6 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure, nex
     </form>
   );
 }
-
 
 Step1LoanType.propTypes = {
   formData: PropTypes.object.isRequired,
