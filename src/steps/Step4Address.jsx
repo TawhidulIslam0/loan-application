@@ -80,6 +80,15 @@ export default function Step4Address() {
         {errors.currentAddressLine1 && <ErrorMessage message={errors.currentAddressLine1.message} />}
       </div>
 
+      {/* Current Address Line 2 (Optional) */}
+      <div>
+        <Input
+          label="Current Address Line 2 (Optional)"
+          {...register('currentAddressLine2')}
+          placeholder="Apartment, suite, unit, building, floor, etc."
+        />
+      </div>
+
       {/* PIN Code & City Grid */}
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -131,7 +140,8 @@ export default function Step4Address() {
             <option value="">Select Type</option>
             <option value="Owned">Owned</option>
             <option value="Rented">Rented</option>
-            <option value="Parental">Parental</option>
+            <option value="Company">Company</option>
+            <option value="Family">Family</option>
           </select>
           {errors.residenceType && <ErrorMessage message={errors.residenceType.message} />}
         </div>
@@ -183,6 +193,38 @@ export default function Step4Address() {
           label="Permanent address is same as current address"
         />
       </div>
+
+      {/* Conditional: Permanent Address Fields if Unchecked */}
+      {!sameAsPermanent && (
+        <div className="p-4 bg-gray-50 rounded-md border border-gray-200 space-y-4">
+          <h3 className="text-sm font-semibold text-gray-700">Permanent Address Details</h3>
+          <Input
+            label="Permanent Address Line 1"
+            {...register('permanentAddressLine1', { required: 'Permanent address is required' })}
+            placeholder="House No., Street Name, Area"
+          />
+          {errors.permanentAddressLine1 && <ErrorMessage message={errors.permanentAddressLine1.message} />}
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Permanent PIN Code"
+              maxLength={6}
+              {...register('permanentPin', { required: 'Permanent PIN code is required' })}
+              placeholder="e.g. 110001"
+            />
+            <Input
+              label="Permanent City"
+              {...register('permanentCity', { required: 'Permanent city is required' })}
+              placeholder="City"
+            />
+          </div>
+          <Input
+            label="Permanent State"
+            {...register('permanentState', { required: 'Permanent state is required' })}
+            placeholder="State"
+          />
+        </div>
+      )}
     </div>
   );
 }
