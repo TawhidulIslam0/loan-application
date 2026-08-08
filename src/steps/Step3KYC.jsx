@@ -2,15 +2,20 @@ import React, { useEffect } from 'react';
 import { useFormContext, Controller } from 'react-hook-form';
 import { MaskedInput } from '../components/common/MaskedInput';
 import { Checkbox } from '../components/common/Checkbox';
-import { ErrorMessage } from "../components/common/ErrorMessage";
+import { ErrorMessage } from '../components/common/ErrorMessage';
 import { useVerification } from '../hooks/useVerification';
+import { validatePAN, validateAadhaar } from '../utils/validators';
 
 export default function Step3KYC({ onVerificationChange }) {
   const { control, watch, formState: { errors } } = useFormContext();
-  
+
   const loanType = watch('loanType') || 'Personal';
+  const loanAmount = watch('loanAmount') || 0;
   const panValue = watch('panNumber');
   const aadhaarValue = watch('aadhaarNumber');
+
+  // Conditional logic for Passport: Shown if Home Loan > 50L (5,000,000)
+  const showPassport = loanType === 'Home' && Number(loanAmount) > 5000000;
 
   const panVerification = useVerification();
   const aadhaarVerification = useVerification();
@@ -23,13 +28,19 @@ export default function Step3KYC({ onVerificationChange }) {
 
   const handlePanBlur = async () => {
     if (panValue) {
-      await panVerification.verify(panValue, 'PAN', loanType);
+      const result = validatePAN(panValue, loanType);
+      if (result.isValid) {
+        await panVerification.verify(panValue, 'PAN', loanType);
+      }
     }
   };
 
   const handleAadhaarBlur = async () => {
     if (aadhaarValue) {
-      await aadhaarVerification.verify(aadhaarValue, 'Aadhaar');
+      const result = validateAadhaar(aadhaarValue);
+      if (result.isValid) {
+        await aadhaarVerification.verify(aadhaarValue, 'Aadhaar');
+      }
     }
   };
 
@@ -43,14 +54,21 @@ export default function Step3KYC({ onVerificationChange }) {
         <div className="flex items-center gap-2">
           <Controller
             name="panNumber"
-            rules={{ required: 'PAN is required' }}
+            control={control}
+            rules={{
+              required: 'PAN is required',
+              validate: (val) => {
+                const res = validatePAN(val, loanType);
+                return res.isValid || res.error;
+              },
+            }}
             render={({ field }) => (
               <MaskedInput
                 {...field}
                 label="PAN Number"
                 type="pan"
-                placeholder="ABCDE1234F"
-                onBlur={async (e) => {
+                placeholder="ABCDE1234P"
+                onBlur={async () => {
                   field.onBlur();
                   await handlePanBlur();
                 }}
@@ -75,14 +93,21 @@ export default function Step3KYC({ onVerificationChange }) {
         <div className="flex items-center gap-2">
           <Controller
             name="aadhaarNumber"
-            rules={{ required: 'Aadhaar is required' }}
+            control={control}
+            rules={{
+              required: 'Aadhaar is required',
+              validate: (val) => {
+                const res = validateAadhaar(val);
+                return res.isValid || res.error;
+              },
+            }}
             render={({ field }) => (
               <MaskedInput
                 {...field}
                 label="Aadhaar Number"
                 type="aadhaar"
                 placeholder="XXXX XXXX 1234"
-                onBlur={async (e) => {
+                onBlur={async () => {
                   field.onBlur();
                   await handleAadhaarBlur();
                 }}
@@ -102,10 +127,70 @@ export default function Step3KYC({ onVerificationChange }) {
         {aadhaarVerification.error && <ErrorMessage message={aadhaarVerification.error} />}
       </div>
 
+      {/* Voter ID (Optional) */}
+      <div className="space-y-1">
+        <Controller
+          name="voterId"
+          control={control}
+          rules={{
+            pattern: {
+              value: /^[A-Z]{3}\d{7}$/,
+              message: 'Voter ID must be 3 letters followed by 7 digits (e.g., ABC1234567)',
+            },
+          }}
+          render={({ field }) => (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Voter ID (Optional)</label>
+              <input
+                type="text"
+                {...field}
+                maxLength={10}
+                placeholder="ABC1234567"
+                className="w-full uppercase px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          )}
+        />
+        {errors.voterId && <ErrorMessage message={errors.voterId.message} />}
+      </div>
+
+      {/* Passport (Conditional: Home Loan > 50L) */}
+      {showPassport && (
+        <div className="space-y-1 animate-fadeIn">
+          <Controller
+            name="passportNumber"
+            control={control}
+            rules={{
+              required: showPassport ? 'Passport number is required for Home Loans above 50L' : false,
+              pattern: {
+                value: /^[A-Z]\d{7}$/,
+                message: 'Passport must be 1 letter followed by 7 digits (e.g., A1234567)',
+              },
+            }}
+            render={({ field }) => (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Passport Number (Required for Home Loan &gt; ₹50,00,000)
+                </label>
+                <input
+                  type="text"
+                  {...field}
+                  maxLength={8}
+                  placeholder="A1234567"
+                  className="w-full uppercase px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+          />
+          {errors.passportNumber && <ErrorMessage message={errors.passportNumber.message} />}
+        </div>
+      )}
+
       {/* Regulatory Aadhaar Consent Checkbox */}
       <div className="pt-2 border-t border-gray-100">
         <Controller
           name="aadhaarConsent"
+          control={control}
           rules={{ required: 'You must provide Aadhaar consent to proceed' }}
           render={({ field: { value, onChange, ...field } }) => (
             <Checkbox
