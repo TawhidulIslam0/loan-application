@@ -12,14 +12,19 @@ export const calculateAge = (dobString) => {
   return age;
 };
 
+const nameRegex = /^[A-Za-z\s.]+$/;
+
 export const step2Schema = z.object({
-  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  fullName: z.string()
+    .min(2, 'Full name must be at least 2 characters')
+    .max(100, 'Full name must be under 100 characters')
+    .regex(nameRegex, 'Only letters, spaces, and periods are allowed'),
   dob: z.string().refine((val) => {
     if (!val) return false;
     const age = calculateAge(val);
-    return age >= 18 && age <= 65;
+    return age >= 21 && age <= 65;
   }, {
-    message: 'You must be between 18 and 65 years old',
+    message: 'You must be between 21 and 65 years old',
   }),
   gender: z.enum(['Male', 'Female', 'Other'], {
     required_error: 'Please select a gender',
@@ -28,12 +33,17 @@ export const step2Schema = z.object({
     (val) => ['Single', 'Married', 'Divorced', 'Widowed'].includes(val),
     { message: 'Please select a valid marital status' }
   ),
+  fatherName: z.string()
+    .min(2, "Father's name must be at least 2 characters")
+    .regex(nameRegex, 'Only letters, spaces, and periods are allowed'),
+  motherName: z.string()
+    .min(2, "Mother's name must be at least 2 characters")
+    .regex(nameRegex, 'Only letters, spaces, and periods are allowed'),
   email: z.string().email('Invalid email address format'),
   mobileNumber: z.string().regex(/^[6-9]\d{9}$/, 'Mobile number must be 10 digits starting with 6, 7, 8, or 9'),
   alternateMobile: z.string().optional(),
 }).refine((data) => {
   if (data.alternateMobile && data.alternateMobile.trim() !== '') {
-    // Check if alternate mobile matches primary mobile
     return data.alternateMobile !== data.mobileNumber;
   }
   return true;
