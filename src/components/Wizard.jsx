@@ -7,16 +7,18 @@ import { Step2PersonalInfo } from '../steps/Step2PersonalInfo';
 import Step3KYC from '../steps/Step3KYC';
 import Step4Address from '../steps/Step4Address';
 import Step7Documents from '../steps/Step7Documents';
+import Step5Employment from '../steps/Step5Employment';
+import Step8Review from '../steps/Step8Review';
 
 const stepsList = [
   { id: 1, name: 'Loan Details', component: Step1LoanType },
   { id: 2, name: 'Personal Info', component: Step2PersonalInfo },
   { id: 3, name: 'Identity KYC', component: Step3KYC },
   { id: 4, name: 'Address', component: Step4Address },
-  { id: 5, name: 'Employment', component: () => <div className="p-6">Step 5 Placeholder</div> },
+  { id: 5, name: 'Employment', component: Step5Employment },
   { id: 6, name: 'Co-Applicant', component: () => <div className="p-6">Step 6 Placeholder</div> },
   { id: 7, name: 'Documents', component: Step7Documents },
-  { id: 8, name: 'Review & Submit', component: () => <div className="p-6">Step 8 Placeholder</div> },
+  { id: 8, name: 'Review & Submit', component: Step8Review },
 ];
 
 export default function Wizard() {
