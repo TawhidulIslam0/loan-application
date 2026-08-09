@@ -1,30 +1,17 @@
 import React, { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { createStep1Schema, loanPurposes } from '../schemas/step1Schema';
+import { useFormContext } from 'react-hook-form';
+import { loanPurposes } from '../schemas/step1Schema';
 import { Select } from '../components/common/Select';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import PropTypes from 'prop-types';
 
-export default function Step1LoanType({ formData, updateFormData, maxTenure }) {
-  const schema = createStep1Schema(maxTenure);
-
+export default function Step1LoanType({ maxTenure }) {
   const {
     register,
     watch,
     setValue,
-    handleSubmit,
     formState: { errors },
-  } = useForm({
-    resolver: zodResolver(schema),
-    defaultValues: formData?.loanType ? formData : {
-      loanType: 'Personal',
-      loanAmount: '',
-      tenureMonths: '',
-      purpose: loanPurposes['Personal'][0],
-    },
-    mode: 'onChange',
-  });
+  } = useFormContext();
 
   const selectedLoanType = watch('loanType');
   const availablePurposes = loanPurposes[selectedLoanType] || [];
@@ -35,16 +22,10 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure }) {
     }
   }, [selectedLoanType, availablePurposes, setValue, watch]);
 
-  const onSubmit = (data) => {
-    if (updateFormData) {
-      updateFormData(data);
-    }
-  };
-
   const purposeOptions = availablePurposes.map((p) => ({ label: p, value: p }));
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-xl mx-auto">
+    <div className="space-y-6 max-w-xl mx-auto">
       {/* Hidden submit button so Wizard's query selector targets this form's submission safely */}
       <button type="submit" className="hidden" aria-hidden="true" />
 
@@ -117,13 +98,10 @@ export default function Step1LoanType({ formData, updateFormData, maxTenure }) {
           error={errors.purpose?.message}
         />
       </div>
-    </form>
+    </div>
   );
 }
 
 Step1LoanType.propTypes = {
-  formData: PropTypes.object.isRequired,
-  updateFormData: PropTypes.func.isRequired,
   maxTenure: PropTypes.number,
-  nextStep: PropTypes.func,
 };
