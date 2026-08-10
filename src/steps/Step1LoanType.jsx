@@ -1,32 +1,66 @@
 import React, { useEffect } from 'react';
-import { useFormContext } from 'react-hook-form';
-import { loanPurposes } from '../schemas/step1Schema';
+import { useForm, useFormContext } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createStep1Schema, loanPurposes } from '../schemas/step1Schema';
 import { Select } from '../components/common/Select';
 import { ErrorMessage } from '../components/common/ErrorMessage';
 import PropTypes from 'prop-types';
 
-export default function Step1LoanType({ maxTenure }) {
+export default function Step1LoanType({ formData, updateFormData, maxTenure }) {
+  const schema = createStep1Schema(maxTenure);
+
+  const localMethods = useForm({
+    resolver: zodResolver(schema),
+    defaultValues: formData?.loanType ? formData : {
+      loanType: 'Personal',
+      loanAmount: '',
+      tenureMonths: '',
+      purpose: loanPurposes['Personal'][0],
+    },
+    mode: 'onChange',
+  });
+
+  const parentMethods = useFormContext();
+
   const {
     register,
     watch,
     setValue,
+    handleSubmit,
     formState: { errors },
-  } = useFormContext();
+  } = localMethods;
 
   const selectedLoanType = watch('loanType');
+  const watchedLoanAmount = watch('loanAmount');
   const availablePurposes = loanPurposes[selectedLoanType] || [];
 
   useEffect(() => {
+    if (parentMethods) {
+      parentMethods.setValue('loanType', selectedLoanType);
+      parentMethods.setValue('loanAmount', watchedLoanAmount);
+    }
+  }, [selectedLoanType, watchedLoanAmount, parentMethods]);
+
+  useEffect(() => {
     if (watch('purpose') && !availablePurposes.includes(watch('purpose'))) {
-      setValue('purpose', availablePurposes[0] || '');
+      setValue('purpose', availablePurposes[0] || '', { shouldValidate: true });
     }
   }, [selectedLoanType, availablePurposes, setValue, watch]);
+
+  const onSubmit = (data) => {
+    if (parentMethods) {
+      parentMethods.setValue('loanType', data.loanType);
+      parentMethods.setValue('loanAmount', data.loanAmount);
+    }
+    if (updateFormData) {
+      updateFormData(data);
+    }
+  };
 
   const purposeOptions = availablePurposes.map((p) => ({ label: p, value: p }));
 
   return (
-    <div className="space-y-6 max-w-xl mx-auto">
-      {/* Hidden submit button so Wizard's query selector targets this form's submission safely */}
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-xl mx-auto">
       <button type="submit" className="hidden" aria-hidden="true" />
 
       <div>
@@ -34,7 +68,6 @@ export default function Step1LoanType({ maxTenure }) {
         <p className="text-sm text-gray-600 mb-4">Choose your loan type and amount preference.</p>
       </div>
 
-      {/* Loan Type Radio Group */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">Loan Type</label>
         <div className="grid grid-cols-3 gap-4">
@@ -58,7 +91,6 @@ export default function Step1LoanType({ maxTenure }) {
         {errors.loanType && <ErrorMessage message={errors.loanType.message} />}
       </div>
 
-      {/* Loan Amount Input */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Loan Amount (₹)</label>
         <div className="relative">
@@ -73,7 +105,6 @@ export default function Step1LoanType({ maxTenure }) {
         {errors.loanAmount && <ErrorMessage message={errors.loanAmount.message} />}
       </div>
 
-      {/* Tenure Months */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Tenure (in months)</label>
         <input
@@ -88,7 +119,6 @@ export default function Step1LoanType({ maxTenure }) {
         )}
       </div>
 
-      {/* Purpose Dropdown */}
       <div>
         <Select
           label="Loan Purpose"
@@ -98,10 +128,12 @@ export default function Step1LoanType({ maxTenure }) {
           error={errors.purpose?.message}
         />
       </div>
-    </div>
+    </form>
   );
 }
 
 Step1LoanType.propTypes = {
+  formData: PropTypes.object,
+  updateFormData: PropTypes.func,
   maxTenure: PropTypes.number,
 };
