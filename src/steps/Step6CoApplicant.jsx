@@ -63,7 +63,10 @@ export default function Step6CoApplicant({ loanType, loanAmount }) {
             label="Co-Applicant PAN Number" 
             {...register('coApplicantPAN', { 
               required: 'PAN is required',
-              pattern: { value: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Invalid PAN format' }
+              pattern: { value: /^[A-Z]{5}[0-9]{4}[A-Z]$/, message: 'Invalid PAN format' },
+              onChange: (e) => {
+                e.target.value = e.target.value.toUpperCase();
+              }
             })} 
             placeholder="ABCDE1234P" 
             className="uppercase"
@@ -71,7 +74,7 @@ export default function Step6CoApplicant({ loanType, loanAmount }) {
           />
           {errors.coApplicantPAN && <ErrorMessage message={errors.coApplicantPAN.message} />}
         </div>
-
+        
         <div>
           <Input 
             label="Co-Applicant Monthly Income (₹)" 
