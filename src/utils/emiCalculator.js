@@ -1,5 +1,3 @@
-// src/utils/emiCalculator.js
-
 /**
  * Calculate loan EMI and total borrowing cost.
  *
@@ -55,16 +53,6 @@ export const calculateEMI = (
   };
 };
 
-/**
- * Calculate processing fee.
- *
- * Default: 1%
- * Home: 0.5%
- * Business: 1.5%
- *
- * Minimum: ₹2,000
- * Maximum: ₹25,000
- */
 export const calculateProcessingFee = (principal, loanType) => {
   const P = Number(principal) || 0;
   const type = String(loanType || '').toLowerCase();
@@ -82,10 +70,6 @@ export const calculateProcessingFee = (principal, loanType) => {
   return Math.round(Math.min(Math.max(fee, 2000), 25000));
 };
 
-/**
- * Calculate indicative interest rate based on
- * loan type, amount and employment profile.
- */
 export const getIndicativeInterestRate = (
   loanType,
   loanAmount,
@@ -105,7 +89,6 @@ export const getIndicativeInterestRate = (
     rate = amount > 1000000 ? 11.0 : 12.5;
   }
 
-  // Salaried applicant discount
   if (employment.includes('salaried')) {
     rate -= 0.5;
   }
@@ -113,9 +96,6 @@ export const getIndicativeInterestRate = (
   return Number(rate.toFixed(2));
 };
 
-/**
- * Calculate the complete financial picture for Step 8.
- */
 export const calculateLoanDetails = ({
   loanAmount,
   tenureMonths,
