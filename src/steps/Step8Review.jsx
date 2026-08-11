@@ -1,37 +1,165 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
+import { calculateLoanDetails } from '../utils/emiCalculator';
+import { isStep6Active } from './Step6CoApplicant';
 
-export default function Step8Review() {
-  const { watch } = useFormContext();
-  
-  // Check both possible income fields depending on employment type
-  const monthlyIncome = Number(watch('monthlyIncome') || watch('monthlyNetSalary')) || 0;
-  const estimatedEMI = 15000; // Sample calculated EMI (or pull from loan calculator state)
-  const maxAllowedEMI = monthlyIncome * 0.5;
-  const isAffordable = estimatedEMI <= maxAllowedEMI;
+const TERMS_AND_CONDITIONS_URL = '/documents/terms-and-conditions.pdf';
 
-  return (
-    <div className="space-y-6 max-w-xl mx-auto p-6 bg-white shadow-sm rounded-lg">
-      <h2 className="text-xl font-bold text-slate-900">Review & Submit</h2>
-      <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-600">Monthly Income:</span>
-          <span className="font-semibold text-slate-900">₹{monthlyIncome.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-slate-600">Estimated Monthly EMI:</span>
-          <span className="font-semibold text-slate-900">₹{estimatedEMI.toLocaleString()}</span>
-        </div>
-        <div className="flex justify-between text-sm border-t border-slate-200 pt-2">
-          <span className="text-slate-600">Max Allowed EMI (50% rule):</span>
-          <span className="font-semibold text-slate-900">₹{maxAllowedEMI.toLocaleString()}</span>
-        </div>
-        {!isAffordable && monthlyIncome > 0 && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md text-sm text-red-700">
-            ⚠️ Warning: Estimated EMI exceeds 50% of monthly income.
-          </div>
-        )}
-      </div>
-    </div>
+const formatINR = (value) =>
+  `₹${Number(value || 0).toLocaleString('en-IN')}`;
+
+const isUploaded = (value) =>
+  Array.isArray(value) ? value.length > 0 : Boolean(value);
+
+export default function Step8Review({ setCurrentStep }) {
+  const { watch, register } = useFormContext();
+  const [successData, setSuccessData] = useState(null);
+  const formData = watch();
+
+  const loanAmount = Number(formData.loanAmount) || 0;
+  const tenureMonths = Number(formData.tenureMonths) || 36;
+  const loanType = formData.loanType || 'Personal';
+  const employmentType = formData.employmentType || 'Salaried';
+  const monthlyIncome = Number(
+    formData.monthlyIncome || formData.monthlyNetSalary || 0
   );
-}
+
+  const step6Active = isStep6Active(loanType, loanAmount);
+  const coApplicantIncome = step6Active
+    ? Number(formData.coApplicantIncome) || 0
+    : 0;
+
+  const calculations = calculateLoanDetails({
+    loanAmount,
+    tenureMonths,
+    loanType,
+    employmentType,
+    monthlyIncome,
+    coApplicantIncome,
+  });
+
+  const requiredDocuments = [
+    ['Aadhaar Front', 'aadhaarFrontFile'],
+    ['Aadhaar Back', 'aadhaarBackFile'],
+    ['Bank Statement', 'bankStatementFile'],
+    ['Photograph', 'photoFile'],
+    ...(!formData.panVerified ? [['PAN Card', 'panDocument']] : []),
+    ...(employmentType === 'Salaried'
+      ? [
+          ['Salary Slip 1', 'salarySlip1'],
+          ['Salary Slip 2', 'salarySlip2'],
+          ['Salary Slip 3', 'salarySlip3'],
+        ]
+      : []),
+    ...(employmentType === 'Self-Employed' ||
+    employmentType === 'Business Owner'
+      ? [
+          ['ITR Year 1', 'itrYear1'],
+          ['ITR Year 2', 'itrYear2'],
+        ]
+      : []),
+    ...(loanType === 'Home'
+      ? [['Property Documents', 'propertyDocFile']]
+      : []),
+    ...(loanType === 'Business'
+      ? [
+          ['Business Registration', 'businessRegFile'],
+          ['GST Quarter 1', 'gstQuarter1'],
+          ['GST Quarter 2', 'gstQuarter2'],
+          ['GST Quarter 3', 'gstQuarter3'],
+          ['GST Quarter 4', 'gstQuarter4'],
+        ]
+      : []),
+  ];
+
+  const missingDocuments = requiredDocuments
+    .filter(([, field]) => !isUploaded(formData[field]))
+    .map(([name]) => name);
+
+  const allDocumentsUploaded = missingDocuments.length === 0;
+  const hasESignature = isUploaded(formData.eSignature);
+
+  const allConsents =
+    formData.consentAccurate &&
+    formData.consentCreditCheck &&
+    formData.consentTerms &&
+    formData.consentComms;
+
+  const highEmiRequired = !calculations.isAffordable;
+  const highEmiConsentSatisfied =
+    !highEmiRequired || Boolean(formData.consentHighEmi);
+
+  const canSubmit =
+    allConsents &&
+    allDocumentsUploaded &&
+    hasESignature &&
+    highEmiConsentSatisfied;
+
+  const handleSubmit = () => {
+    if (!canSubmit) return;
+
+    setSuccessData({
+      refNumber: crypto.randomUUID(),
+      date: new Date().toLocaleString('en-IN'),
+      ...calculations,
+      ...formData,
+      loanAmount,
+      tenureMonths,
+      loanType,
+    });
+  };
+
+  if (successData) {
+    return <SuccessModal data={successData} />;
+  }
+
+  const reviewRows = [
+    [
+      '1. Loan Details',
+      `${loanType} Loan (${formatINR(loanAmount)})`,
+      1,
+    ],
+    [
+      '2. Personal Information',
+      formData.fullName || 'Information provided',
+      2,
+    ],
+    [
+      '3. KYC & Verification',
+      formData.panVerified ? 'PAN Verified' : 'KYC information provided',
+      3,
+    ],
+    [
+      '4. Address Details',
+      formData.currentCity || formData.city || 'Address provided',
+      4,
+    ],
+    [
+      '5. Employment & Income',
+      `${employmentType} — ${formatINR(monthlyIncome)} monthly`,
+      5,
+    ],
+    [
+      '6. Co-Applicant & Guarantor',
+      step6Active
+        ? formData.coApplicantName
+          ? `${formData.coApplicantName} — ${formatINR(
+              coApplicantIncome
+            )} monthly`
+          : 'Details required'
+        : 'Not required for this application',
+      6,
+    ],
+    [
+      '7. Documents & E-Signature',
+      allDocumentsUploaded && hasESignature
+        ? 'All required documents uploaded'
+        : `Missing ${missingDocuments.length} document(s)`,
+      7,
+    ],
+  ];}
+
+  
+
+ 
+
