@@ -11,7 +11,7 @@ const formatINR = (value) =>
 const isUploaded = (value) =>
   Array.isArray(value) ? value.length > 0 : Boolean(value);
 
-export default function Step8Review({ setCurrentStep }) {
+export default function Step8Review({ editStep }) {
   const { watch, register } = useFormContext();
   const [successData, setSuccessData] = useState(null);
   const formData = watch();
@@ -257,7 +257,7 @@ export default function Step8Review({ setCurrentStep }) {
               key={title}
               title={title}
               value={value}
-              onEdit={() => setCurrentStep(step)}
+              onEdit={() => editStep(step)}
             />
           ))}
         </div>
@@ -276,7 +276,7 @@ export default function Step8Review({ setCurrentStep }) {
 
           <button
             type="button"
-            onClick={() => setCurrentStep(7)}
+            onClick={() => editStep(7)}
             className="mt-3 font-semibold underline"
           >
             Go to Step 7
@@ -504,4 +504,3 @@ function SuccessModal({ data }) {
     </div>
   );
 }
-
