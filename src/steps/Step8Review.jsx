@@ -98,6 +98,10 @@ export default function Step8Review({ editStep }) {
   const handleSubmit = () => {
     if (!canSubmit) return;
 
+    // Wipe draft data from storage only upon final application submission
+    localStorage.removeItem('lend_swift_draft');
+    localStorage.removeItem('lend_swift_draft_meta');
+
     setSuccessData({
       refNumber: crypto.randomUUID(),
       date: new Date().toLocaleString('en-IN'),
@@ -447,6 +451,15 @@ function Consent({ register, name, text, warning = false }) {
 }
 
 function SuccessModal({ data }) {
+  const { reset } = useFormContext();
+
+  const handleStartNewApplication = () => {
+    localStorage.removeItem('lend_swift_draft');
+    localStorage.removeItem('lend_swift_draft_meta');
+    reset();
+    window.location.reload();
+  };
+
   const rows = [
     ['Application Reference', data.refNumber],
     ['Submitted', data.date],
@@ -495,7 +508,7 @@ function SuccessModal({ data }) {
 
         <button
           type="button"
-          onClick={() => window.location.reload()}
+          onClick={handleStartNewApplication}
           className="w-full rounded-lg bg-blue-600 py-3 font-semibold text-white hover:bg-blue-700"
         >
           Start New Application
