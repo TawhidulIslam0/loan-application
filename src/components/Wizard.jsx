@@ -8,7 +8,9 @@ import { Step2PersonalInfo } from '../steps/Step2PersonalInfo';
 import Step3KYC from '../steps/Step3KYC';
 import Step4Address from '../steps/Step4Address';
 import Step5Employment from '../steps/Step5Employment';
-import Step6CoApplicant, { isStep6Active } from '../steps/Step6CoApplicant';
+import Step6CoApplicant, {
+  isStep6Active,
+} from '../steps/Step6CoApplicant';
 import Step7Documents from '../steps/Step7Documents';
 import Step8Review from '../steps/Step8Review';
 
@@ -71,7 +73,6 @@ export default function Wizard() {
 
   const watchedLoanType = methods.watch('loanType');
   const watchedLoanAmount = methods.watch('loanAmount');
-  const watchedFormData = methods.watch();
 
   const showCoApplicant = isStep6Active(
     watchedLoanType,
@@ -88,8 +89,6 @@ export default function Wizard() {
 
   const totalSteps = stepsList.length;
 
-  const currentStepId = stepsList[currentStep - 1]?.id || 1;
-
   useEffect(() => {
     if (currentStep > totalSteps) {
       setCurrentStep(totalSteps);
@@ -101,23 +100,25 @@ export default function Wizard() {
 
     async function loadDraft() {
       try {
-        const encryptedDraft = localStorage.getItem('lend_swift_draft');
+        const encryptedDraft = localStorage.getItem(
+          'lend_swift_draft'
+        );
 
         if (!encryptedDraft) {
           if (mounted) {
             setIsLoaded(true);
           }
+
           return;
         }
 
         const decrypted = await decryptData(encryptedDraft);
 
-        if (!mounted) {
-          return;
-        }
+        if (!mounted || !decrypted?.data) {
+          if (mounted) {
+            setIsLoaded(true);
+          }
 
-        if (!decrypted?.data) {
-          setIsLoaded(true);
           return;
         }
 
@@ -125,49 +126,33 @@ export default function Wizard() {
           'An existing loan application draft was found. Would you like to resume?'
         );
 
-        if (!shouldResume) {
-          localStorage.removeItem('lend_swift_draft');
-          setIsLoaded(true);
-          return;
-        }
+        if (shouldResume) {
+          const restoredData = {
+            ...defaultFormValues,
+            ...decrypted.data,
+          };
 
-        const restoredData = {
-          ...defaultFormValues,
-          ...decrypted.data,
-        };
+          methods.reset(restoredData);
 
-        methods.reset(restoredData);
+          const savedStepId = Number(decrypted.step);
 
-        const savedStepId = Number(
-          decrypted.stepId ?? decrypted.step
-        );
-
-        if (
-          Number.isInteger(savedStepId) &&
-          savedStepId >= 1 &&
-          savedStepId <= baseStepsList.length
-        ) {
           const restoredStepIndex = baseStepsList.findIndex(
             (step) => step.id === savedStepId
           );
 
           if (restoredStepIndex !== -1) {
-            const visibleStepIndex = stepsList.findIndex(
+            const restoredStep = stepsList.findIndex(
               (step) => step.id === savedStepId
             );
 
-            if (visibleStepIndex !== -1) {
-              setCurrentStep(visibleStepIndex + 1);
+            if (restoredStep !== -1) {
+              setCurrentStep(restoredStep + 1);
             } else {
-              const fallbackIndex = stepsList.findIndex(
-                (step) => step.id === 8
-              );
-
-              setCurrentStep(
-                fallbackIndex !== -1 ? fallbackIndex + 1 : 1
-              );
+              setCurrentStep(1);
             }
           }
+        } else {
+          localStorage.removeItem('lend_swift_draft');
         }
       } catch (error) {
         console.error('Failed to load loan draft:', error);
@@ -185,11 +170,20 @@ export default function Wizard() {
     };
   }, [methods]);
 
-  useAutoSave(watchedFormData, currentStepId);
+  const watchedFormData = methods.watch();
+
+  const currentStepId =
+    stepsList[currentStep - 1]?.id || 1;
+
+  useAutoSave(
+    watchedFormData,
+    currentStepId
+  );
 
   const handleNext = async () => {
-    if (currentStepId === 1) {
+    if (currentStep === 1) {
       const values = methods.getValues();
+
       const result = createStep1Schema().safeParse(values);
 
       if (!result.success) {
@@ -210,10 +204,28 @@ export default function Wizard() {
       }
 
       methods.clearErrors();
+
+      // Force an immediate encrypted save to localStorage right when passing Step 1
+      const payload = {
+        version: '1.0',
+        step: 2,
+        timestamp: new Date().toISOString(),
+        data: values,
+      };
+      const { encryptData } = await import('../utils/encryption');
+      const encrypted = await encryptData(payload);
+      if (encrypted) {
+        localStorage.setItem('lend_swift_draft', encrypted);
+        localStorage.setItem(
+          'lend_swift_draft_meta',
+          JSON.stringify({ timestamp: payload.timestamp, version: payload.version })
+        );
+      }
     }
 
-    if (currentStepId === 2) {
+    if (currentStep === 2) {
       const values = methods.getValues();
+
       const result = step2Schema.safeParse(values);
 
       if (!result.success) {
@@ -255,7 +267,9 @@ export default function Wizard() {
           age--;
         }
 
-        setMaxTenure(Math.max(1, 65 - age));
+        setMaxTenure(
+          Math.max(1, 65 - age)
+        );
       }
 
       methods.clearErrors();
@@ -293,57 +307,89 @@ export default function Wizard() {
       const currentValues = methods.getValues();
 
       const payload = {
-        stepId: currentStepId,
+        step: stepsList[currentStep - 1]?.id || 1,
         data: currentValues,
         timestamp: new Date().toISOString(),
       };
 
-      const { encryptData } = await import('../utils/encryption');
+      const { encryptData } = await import(
+        '../utils/encryption'
+      );
+
       const encrypted = await encryptData(payload);
 
       if (encrypted) {
-        localStorage.setItem('lend_swift_draft', encrypted);
-        alert('Draft saved successfully with encryption!');
+        localStorage.setItem(
+          'lend_swift_draft',
+          encrypted
+        );
+
+        alert(
+          'Draft saved successfully with encryption!'
+        );
       }
     } catch (error) {
-      console.error('Failed to save draft:', error);
+      console.error(
+        'Failed to save draft:',
+        error
+      );
     }
   };
 
   const handleUpdateFormData = useCallback(
     async (data) => {
-      Object.entries(data).forEach(([key, value]) => {
-        methods.setValue(key, value, {
-          shouldDirty: true,
-          shouldValidate: true,
-        });
-      });
+      Object.entries(data).forEach(
+        ([key, value]) => {
+          methods.setValue(
+            key,
+            value,
+            {
+              shouldDirty: true,
+              shouldValidate: true,
+            }
+          );
+        }
+      );
 
       if (currentStep < totalSteps) {
-        setCurrentStep((prev) => prev + 1);
+        setCurrentStep(
+          (prev) => prev + 1
+        );
       }
     },
-    [currentStep, totalSteps, methods]
+    [
+      currentStep,
+      totalSteps,
+      methods,
+    ]
   );
 
-  const handleVerificationChange = useCallback(
-    (verificationData) => {
-      Object.entries(verificationData).forEach(([key, value]) => {
-        methods.setValue(key, value, {
-          shouldDirty: true,
-          shouldValidate: true,
+  const handleVerificationChange =
+    useCallback(
+      (verificationData) => {
+        Object.entries(
+          verificationData
+        ).forEach(([key, value]) => {
+          methods.setValue(
+            key,
+            value,
+            {
+              shouldDirty: true,
+              shouldValidate: true,
+            }
+          );
         });
-      });
-    },
-    [methods]
-  );
+      },
+      [methods]
+    );
 
   if (!isLoaded) {
     return null;
   }
 
   const CurrentComponent =
-    stepsList[currentStep - 1]?.component || Step1LoanType;
+    stepsList[currentStep - 1]?.component ||
+    Step1LoanType;
 
   return (
     <FormProvider {...methods}>
@@ -373,7 +419,9 @@ export default function Wizard() {
             setMaxTenure={setMaxTenure}
             nextStep={handleNext}
             prevStep={handlePrev}
-            onVerificationChange={handleVerificationChange}
+            onVerificationChange={
+              handleVerificationChange
+            }
             loanType={watchedLoanType}
             loanAmount={watchedLoanAmount}
             editStep={handleEditStep}
