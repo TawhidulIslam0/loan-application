@@ -20,7 +20,7 @@ export function useAutoSave(formData, currentStep, storageKey = 'lend_swift_draf
         localStorage.setItem(storageKey, encrypted);
         console.debug('Auto-saved encrypted state at step', currentStep);
       }
-    }, 30000); // Every 30 seconds
+    }, 1000); // Every 1 seconds
 
     return () => clearInterval(interval);
   }, [currentStep, storageKey]);
