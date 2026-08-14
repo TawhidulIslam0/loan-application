@@ -44,7 +44,7 @@ describe('File Upload Edge Cases & Validations', () => {
     cy.contains(/File type must be one of/i).should('be.visible');
   });
 //4
-  it('allows uploading a file and then replacing it with another file', () => {
+  it('allows uploading a file and then removing it using the remove button', () => {
     // 1. Upload initial file
     cy.fixture('images/pan-card.png', null).then((fileContent) => {
       cy.contains('label', /pan card copy/i)
@@ -53,19 +53,15 @@ describe('File Upload Edge Cases & Validations', () => {
         .selectFile({ contents: fileContent, fileName: 'pan-card.png', mimeType: 'image/png' }, { force: true });
     });
     
-    // Verify the file is uploaded and the replace text/indicator is visible
-    cy.contains(/Click or drag to replace this file/i).should('be.visible');
+    // Verify the file is uploaded and preview name is visible
+    cy.contains('pan-card.png').should('be.visible');
 
-    // 2. Select the new file directly on the same hidden file input to replace it
-    cy.fixture('images/pan-card-2.png', null).then((newFileContent) => {
-      cy.contains('label', /pan card copy/i)
-        .parent()
-        .find('input[type="file"]')
-        .selectFile({ contents: newFileContent, fileName: 'pan-card-2.png', mimeType: 'image/png' }, { force: true });
-    });
+    // 2. Click the remove button
+    cy.get('button.remove-file-btn').click();
 
-    // 3. Verify the new file successfully updates the name in the preview
-    cy.contains('pan-card-2.png').should('be.visible');
+    // 3. Verify the file is removed and the dropzone prompt returns
+    cy.contains('pan-card.png').should('not.exist');
+    cy.contains(/drag & drop your file here|browse/i).should('be.visible');
   });
 //5
   it('compresses high-resolution images successfully', () => {
