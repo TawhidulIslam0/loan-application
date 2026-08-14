@@ -94,6 +94,16 @@ export default function FileUpload({
     [maxSizeMB]
   );
 
+  const handleRemove = (e) => {
+    e.stopPropagation(); // Prevents dropzone from opening file picker
+    setFile(null);
+    setPreview(null);
+    setOriginalSize(null);
+    setCompressedSize(null);
+    setFileError(null);
+    onFileUploaded?.(null);
+  };
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     onDropRejected,
@@ -145,7 +155,31 @@ export default function FileUpload({
             Compressing image...
           </p>
         ) : file ? (
-          <div className="space-y-2">
+          <div className="space-y-2 relative">
+            {/* Remove File Button */}
+            <button
+              type="button"
+              onClick={handleRemove}
+              className="absolute top-0 right-0 rounded-full bg-slate-200 p-1 text-slate-600 hover:bg-red-100 hover:text-red-600 transition remove-file-btn"
+              aria-label="Remove file"
+              title="Remove file"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
             {preview ? (
               <img
                 src={preview}
@@ -211,4 +245,3 @@ FileUpload.propTypes = {
   error: PropTypes.string,
   initialFile: PropTypes.object,
 };
-
