@@ -32,6 +32,7 @@
     "autoprefixer": "^10.5.4",
     "cypress": "^15.20.1",
     "cypress-file-upload": "^5.0.8",
+    "cypress-real-events": "^1.15.0",
     "eslint": "^9.39.5",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-plugin-import": "^2.32.0",
