@@ -1,6 +1,6 @@
 # LendSwift Loan Application
 
-**Live Application:** loan-application-beryl.vercel.app/
+**Live Application:** https://loan-application-beryl.vercel.app/
 
 A comprehensive, production-ready multi-step loan application form built with React, designed to support Personal, Home, and Business loan types with advanced form management, validation, and E2E testing.
 
